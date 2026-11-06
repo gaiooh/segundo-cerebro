@@ -20,6 +20,8 @@ src/
     categories/       Categorias e subcategorias (hierarquia)
     semantic-links/   Ligações semânticas entre ideias (embeddings, relações)
     assistant/        Assistente de IA conversacional sobre as notas
+    settings/         Preferências do usuário (tema, destaque, organização), persistidas
+  theme/            Design system: tokens, paletas, ThemeProvider e useTheme
   components/       Componentes de UI reutilizáveis entre features
   hooks/            Hooks genéricos (não pertencentes a uma feature)
   lib/              Infraestrutura compartilhada (clientes HTTP/IA, storage, utilitários)
@@ -39,6 +41,37 @@ assets/             Ícones, splash e imagens
 - Algo usado por duas ou mais features sobe para `components/`, `hooks/` ou `lib/`.
 - Imports usam o alias `@/` (ex.: `import { x } from '@/features/notes'`).
 - Arquivos `.gitkeep` existem só para versionar pastas vazias; remova-os quando a pasta receber código.
+
+## Navegação
+
+```
+src/app/
+  _layout.tsx            Fontes + provedores (Preferences → Theme → Categories) + Stack raiz
+  (tabs)/_layout.tsx     Abas com barra inferior própria (components/TabBar.tsx)
+    categories.tsx       Categorias (lista/grade, ordenação, criação)
+    links.tsx            Ligações (grafo de ideias)
+    index.tsx            Falar — rota inicial "/" e ação central
+    assistant.tsx        Assistente
+    settings.tsx         Configurações
+  folder/[id].tsx        Conteúdo de uma categoria (subpastas + notas)
+```
+
+## Design system (`src/theme`)
+
+- **Nada de cor, fonte ou espaçamento fixo nos componentes**: tudo vem de `useTheme()`.
+- `tokens.ts`: espaçamento, raios, tipografia (por *papel*, ex. `display`, `body`), movimento.
+- `palettes.ts`: base neutra por esquema (branco no claro, preto no escuro), cores de destaque
+  intercambiáveis (padrão: rosa) e tons discretos para pastas.
+- Personalização futura: novas cores de destaque entram em `accentPalettes`; trocar a fonte é
+  trocar `fontFamilies` (e carregá-la em `app/_layout.tsx`).
+- Use sempre `Text`, `Screen`, `PressableScale` etc. de `@/components` em vez dos primitivos do React Native.
+
+## Dados de demonstração
+
+Arquivos `mock-*.ts` dentro de cada feature contêm **dados fictícios** apenas para demonstrar as
+interfaces. Gravação, transcrição, envio e respostas do assistente são **simulações visuais**
+(`useCaptureSimulation`, `useAssistantChat`). Ao implementar cada funcionalidade, substitua o
+mock pela fonte real mantendo a mesma API exportada pelo `index.ts` da feature.
 
 ## Dependências nativas
 
