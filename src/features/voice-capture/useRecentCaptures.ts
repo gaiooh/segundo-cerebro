@@ -1,38 +1,38 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { mockNotes } from '@/features/notes';
+import { useNotes } from '@/features/notes';
 
 export type RecentCapture = {
   id: string;
   title: string;
   source: 'voice' | 'text';
   createdAt: string;
-  /** True for items created in this session by the simulated capture. */
+  /** Set for real, saved notes (tapping opens them). */
+  noteId?: string;
+  /** True for simulated voice captures (recording is not implemented yet). */
   pending?: boolean;
 };
 
 /**
- * Recent captures: demo notes plus whatever was "captured" in this session.
- * Session items live in memory only.
+ * Recent captures: the latest saved notes, preceded by simulated voice
+ * captures from this session (kept in memory only, until transcription exists).
  */
 export function useRecentCaptures() {
-  const [sessionItems, setSessionItems] = useState<RecentCapture[]>([]);
+  const { notes } = useNotes();
+  const [simulated, setSimulated] = useState<RecentCapture[]>([]);
 
-  const seeded = useMemo<RecentCapture[]>(
+  const saved = useMemo<RecentCapture[]>(
     () =>
-      [...mockNotes]
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .slice(0, 6)
-        .map((n) => ({ id: n.id, title: n.title, source: n.source, createdAt: n.updatedAt })),
-    [],
+      notes.slice(0, 8).map((n) => ({ id: n.id, noteId: n.id, title: n.title, source: n.source, createdAt: n.createdAt })),
+    [notes],
   );
 
-  const add = useCallback((item: Omit<RecentCapture, 'id' | 'createdAt'>) => {
-    setSessionItems((current) => [
-      { ...item, id: `capture-${Date.now().toString(36)}`, createdAt: new Date().toISOString() },
+  const addSimulated = useCallback((item: Pick<RecentCapture, 'title' | 'source'>) => {
+    setSimulated((current) => [
+      { ...item, pending: true, id: `capture-${Date.now().toString(36)}`, createdAt: new Date().toISOString() },
       ...current,
     ]);
   }, []);
 
-  return { recents: [...sessionItems, ...seeded], add };
+  return { recents: [...simulated, ...saved], addSimulated };
 }

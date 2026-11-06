@@ -108,6 +108,19 @@ const icons = {
   drag: <Path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />,
   pencil: <Path d="M15.5 4.5l4 4L9 19H5v-4z" />,
   trash: <Path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />,
+  search: (
+    <>
+      <Circle cx="11" cy="11" r="6.5" />
+      <Path d="M16 16l4 4" />
+    </>
+  ),
+  share: <Path d="M12 14.5V4M8 7.5L12 3.5l4 4M7 10.5H6a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V12a1.5 1.5 0 0 0-1.5-1.5h-1" />,
+  inbox: (
+    <>
+      <Path d="M4 13.5l2.2-7.3A1.8 1.8 0 0 1 8 5h8a1.8 1.8 0 0 1 1.8 1.2l2.2 7.3V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" />
+      <Path d="M4 13.5h4.5l1.2 2h4.6l1.2-2H20" />
+    </>
+  ),
 } as const;
 
 export type IconName = keyof typeof icons;

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useAnimatedValue } from '@/hooks/useAnimatedValue';
@@ -15,6 +16,7 @@ import {
   useRecentCaptures,
   type CaptureMode,
 } from '@/features/voice-capture';
+import { useNotes } from '@/features/notes';
 import { useTheme } from '@/theme';
 
 const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -22,7 +24,8 @@ const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeri
 /**
  * Falar — the capture screen. Voice and text share one stage: switching
  * modes swaps the central control instead of adding a second one.
- * Capture and sending are visual simulations in this stage.
+ * Text captures are saved as real notes (the typed text becomes the note's
+ * original). Voice recording is still a visual simulation in this stage.
  */
 export default function SpeakScreen() {
   const theme = useTheme();
@@ -31,7 +34,9 @@ export default function SpeakScreen() {
   const [mode, setMode] = useState<CaptureMode>('voice');
   const [draft, setDraft] = useState('');
   const [savedFlash, setSavedFlash] = useState(false);
-  const { recents, add } = useRecentCaptures();
+  const { recents, addSimulated } = useRecentCaptures();
+  const { create } = useNotes();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const flashSaved = () => {
     setSavedFlash(true);
@@ -39,19 +44,24 @@ export default function SpeakScreen() {
   };
 
   const capture = useCaptureSimulation((duration) => {
-    add({ title: `Gravação de ${formatDuration(duration)}`, source: 'voice', pending: true });
+    addSimulated({ title: `Gravação de ${formatDuration(duration)}`, source: 'voice' });
     flashSaved();
   });
 
   const busy = capture.status !== 'idle';
 
-  const sendText = () => {
-    const text = draft.trim();
-    if (!text) return;
-    add({ title: text, source: 'text', pending: true });
-    setDraft('');
-    Keyboard.dismiss();
-    flashSaved();
+  const sendText = async () => {
+    if (!draft.trim()) return;
+    setSaveError(null);
+    try {
+      // Saved exactly as typed: the original is never trimmed or reformatted.
+      await create({ text: draft, source: 'text' });
+      setDraft('');
+      Keyboard.dismiss();
+      flashSaved();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Não foi possível salvar.');
+    }
   };
 
   const switchMode = (next: CaptureMode) => {
@@ -97,7 +107,13 @@ export default function SpeakScreen() {
                 <FadeIn key="text" offset={10} style={styles.composer}>
                   <TextComposer value={draft} onChange={setDraft} onSubmit={sendText} autoFocus />
                   <View style={[styles.textStatus, { marginTop: spacing.md }]}>
-                    {savedFlash ? <SavedLabel /> : null}
+                    {saveError ? (
+                      <Text variant="label" color="danger">
+                        {saveError}
+                      </Text>
+                    ) : savedFlash ? (
+                      <SavedLabel />
+                    ) : null}
                   </View>
                 </FadeIn>
               )}
@@ -109,7 +125,7 @@ export default function SpeakScreen() {
           </View>
 
           <View style={{ paddingBottom: spacing.xl }}>
-            <RecentCaptures items={recents} />
+            <RecentCaptures items={recents} onOpen={(id) => router.push({ pathname: '/note/[id]', params: { id } })} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

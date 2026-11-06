@@ -7,10 +7,23 @@ type FolderActionsProps = {
   onSort: () => void;
   onCreate: () => void;
   onDoneReordering: () => void;
+  /** Opens note search (top-level screen). */
+  onSearch?: () => void;
+  /** Rename / recolor / delete the current folder. */
+  onEdit?: () => void;
+  createLabel?: string;
 };
 
-/** The three discreet header controls: view, sort, create. */
-export function FolderActions({ reordering, onSort, onCreate, onDoneReordering }: FolderActionsProps) {
+/** Discreet header controls: search or edit, view, sort, create. */
+export function FolderActions({
+  reordering,
+  onSort,
+  onCreate,
+  onDoneReordering,
+  onSearch,
+  onEdit,
+  createLabel = 'Nova pasta',
+}: FolderActionsProps) {
   const theme = useTheme();
   const { preferences, update } = usePreferences();
 
@@ -36,6 +49,12 @@ export function FolderActions({ reordering, onSort, onCreate, onDoneReordering }
   const isGrid = preferences.folderView === 'grid';
   return (
     <>
+      {onSearch ? (
+        <IconButton icon="search" accessibilityLabel="Buscar notas" onPress={onSearch} color={theme.colors.textSecondary} />
+      ) : null}
+      {onEdit ? (
+        <IconButton icon="pencil" accessibilityLabel="Editar pasta" onPress={onEdit} color={theme.colors.textSecondary} />
+      ) : null}
       <IconButton
         icon={isGrid ? 'list' : 'grid'}
         accessibilityLabel={isGrid ? 'Ver em lista' : 'Ver em grade'}
@@ -43,7 +62,7 @@ export function FolderActions({ reordering, onSort, onCreate, onDoneReordering }
         color={theme.colors.textSecondary}
       />
       <IconButton icon="sort" accessibilityLabel="Ordenar" onPress={onSort} color={theme.colors.textSecondary} />
-      <IconButton icon="plus" accessibilityLabel="Nova pasta" onPress={onCreate} variant="tonal" size={38} />
+      <IconButton icon="plus" accessibilityLabel={createLabel} onPress={onCreate} variant="tonal" size={38} />
     </>
   );
 }

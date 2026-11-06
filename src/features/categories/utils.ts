@@ -31,3 +31,6 @@ export const sortDescriptions: Record<FolderSort, string> = {
   updated: 'Modificadas recentemente primeiro',
   created: 'Criadas recentemente primeiro',
 };
+
+/** Route id of the virtual "Sem categoria" folder (notes not filed yet). */
+export const UNFILED_ID = 'sem-categoria';

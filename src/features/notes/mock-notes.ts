@@ -1,4 +1,13 @@
-import type { Note } from './types';
+/** Shape of the demo notes (used only by the Ligações demo). */
+export type DemoNote = {
+  id: string;
+  folderId: string;
+  title: string;
+  body: string;
+  source: 'voice' | 'text';
+  createdAt: string;
+  updatedAt: string;
+};
 
 /**
  * DEMO DATA — fictional notes used only to showcase the interface.
@@ -11,7 +20,7 @@ function ago(ms: number): string {
   return new Date(Date.now() - ms).toISOString();
 }
 
-type Seed = [id: string, folderId: string, title: string, body: string, source: Note['source'], ageMs: number];
+type Seed = [id: string, folderId: string, title: string, body: string, source: DemoNote['source'], ageMs: number];
 
 const seeds: Seed[] = [
   ['n1', 'career-leadership', 'Feedback é presente, não sentença', 'Dar feedback cedo e com contexto. Separar o comportamento da pessoa.', 'voice', 2 * HOUR],
@@ -38,7 +47,7 @@ const seeds: Seed[] = [
   ['n22', 'ideas-product', 'Modo foco para leitura', 'Esconder tudo que não é o texto. Tipografia generosa.', 'text', 30 * DAY],
 ];
 
-export const mockNotes: Note[] = seeds.map(([id, folderId, title, body, source, age]) => ({
+export const mockNotes: DemoNote[] = seeds.map(([id, folderId, title, body, source, age]) => ({
   id,
   folderId,
   title,

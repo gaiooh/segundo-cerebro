@@ -53,8 +53,78 @@ src/app/
     index.tsx            Falar — rota inicial "/" e ação central
     assistant.tsx        Assistente
     settings.tsx         Configurações
-  folder/[id].tsx        Conteúdo de uma categoria (subpastas + notas)
+  folder/[id].tsx        Conteúdo de uma categoria (subpastas + notas); "sem-categoria" = notas não arquivadas
+  note/[id].tsx          Nota: título e versão organizada (autosave), original somente leitura,
+                         mover, exportar, excluir, ligações e menções
+  note/new.tsx           Nova nota (o texto digitado vira o original)
+  search.tsx             Busca em todas as notas
 ```
+
+## Notas e armazenamento
+
+**Fonte única da verdade: SQLite local** (`expo-sqlite`, arquivo `segundo-cerebro.db`).
+Markdown é o **formato de exportação**, gerado sob demanda — não há uma segunda cópia
+dos dados para sincronizar.
+
+Por que SQLite e não arquivos `.md` como armazenamento principal:
+- Escritas atômicas (transações): mover, excluir categoria ou salvar ligações nunca
+  deixam o estado pela metade, mesmo se o app fechar no meio.
+- Busca, contagens e ligações (backlinks) são consultas, não varreduras de arquivos.
+- Funciona igual em Android, iOS e web; arquivos no iOS/Android ficam presos ao sandbox
+  do app e exigiriam um índice de qualquer forma (duplicação).
+- A compatibilidade com o Obsidian vem do exportador, que gera um cofre completo.
+
+Camadas (cada uma só conhece a de baixo):
+
+```
+UI (src/app, components)        telas e componentes
+  ↓
+Providers (NotesProvider,       estado React; relê o banco após cada escrita
+ CategoriesProvider)
+  ↓
+Serviços (notes-service,        regras de negócio: original imutável, títulos, ligações,
+ folders-service, markdown.ts)  exclusão segura de categorias, formato Markdown
+  ↓
+Repositórios / SQL              notes-repository.ts, SQL do folders-service
+  ↓
+src/lib/database                contrato SqlDatabase, migrações, adaptador expo-sqlite
+```
+
+Serviços, repositórios, migrações e `markdown.ts` são TypeScript puro (sem React Native)
+e usam imports relativos com extensão `.ts`, para rodarem também nos testes em Node
+(`npm test`, com `node:sqlite` implementando o mesmo contrato `SqlDatabase`).
+
+### Modelo
+
+- `notes`: `id` (UUID v4), `folder_id` (null = sem categoria), `title`, `original`,
+  `organized` (null = ainda não escrita), `source` (`voice`/`text`), `created_at`, `updated_at`,
+  `search_text` (índice derivado: minúsculas, sem acentos).
+- **Original preservado**: gravado uma vez, nunca atualizado — garantido também por um
+  trigger no banco. Edições vão para `organized`. Uma versão organizada idêntica ao original
+  não é gravada (evita duplicação).
+- `folders`: categorias e subcategorias (`parent_id`), cor e ordem manual. Excluir uma
+  categoria **não apaga notas**: notas e subpastas sobem para a categoria mãe.
+- `note_links`: ligações por **id** (`source_id → target_id`). São extraídas de
+  `[[Título]]` ou `[[id]]` na versão organizada (ou no original, se não houver organizada);
+  links pendentes se completam quando a nota citada é criada.
+- Migrações versionadas por `PRAGMA user_version` (`src/lib/database/migrations.ts`).
+  Nunca altere uma migração publicada; acrescente outra.
+
+### Exportação Markdown (Obsidian)
+
+- Estrutura: `<Categoria>/<Subcategoria>/<Título>.md`; notas sem categoria em `Sem categoria/`.
+- Front matter YAML com `id`, `title`, `created`, `updated`, `source`, `category` e `links`.
+- Corpo: a versão organizada (com `[[links]]` reescritos para o nome real do arquivo) e,
+  em seguida, `## Pensamento original` com o texto original intacto. Sem versão organizada,
+  o corpo é o original.
+- Nota única: menu de compartilhamento do sistema (web: download). Tudo: o usuário escolhe
+  uma pasta (ex.: o cofre do Obsidian) via `Directory.pickDirectoryAsync` (Android/iOS).
+
+### Web
+
+`metro.config.js` serve arquivos `.wasm` e envia os cabeçalhos COOP/COEP exigidos pelo
+`expo-sqlite` na web. O SQLite da web não tem FTS, por isso a busca usa `LIKE` sobre
+`search_text`; quando o volume exigir, dá para migrar para FTS5 nas plataformas nativas.
 
 ## Design system (`src/theme`)
 
@@ -68,9 +138,10 @@ src/app/
 
 ## Dados de demonstração
 
-Arquivos `mock-*.ts` dentro de cada feature contêm **dados fictícios** apenas para demonstrar as
-interfaces. Gravação, transcrição, envio e respostas do assistente são **simulações visuais**
-(`useCaptureSimulation`, `useAssistantChat`). Ao implementar cada funcionalidade, substitua o
+Notas e categorias são **reais** (SQLite). Os arquivos `mock-notes.ts` e `mock-folders.ts`
+continuam existindo só para a demonstração da aba Ligações. Gravação de voz, transcrição e
+respostas do assistente ainda são **simulações visuais** (`useCaptureSimulation`,
+`useAssistantChat`); capturas por texto na tela Falar já viram notas reais. Ao implementar cada funcionalidade, substitua o
 mock pela fonte real mantendo a mesma API exportada pelo `index.ts` da feature.
 
 ## Dependências nativas

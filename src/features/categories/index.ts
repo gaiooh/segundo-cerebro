@@ -1,8 +1,10 @@
 export { CategoriesProvider, useCategories } from './CategoriesProvider';
-export { CreateFolderSheet } from './components/CreateFolderSheet';
+export { CreateFolderSheet, EditFolderSheet } from './components/CreateFolderSheet';
 export { FolderActions } from './components/FolderActions';
 export { FolderBrowser } from './components/FolderBrowser';
+export { FolderGlyph } from './components/FolderGlyph';
+export { FolderPickerSheet } from './components/FolderPickerSheet';
 export { mockFolders } from './mock-folders';
 export { SortSheet } from './components/SortSheet';
 export type { Folder } from './types';
-export { sortLabels } from './utils';
+export { sortLabels, UNFILED_ID } from './utils';

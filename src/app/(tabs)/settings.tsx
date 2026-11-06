@@ -3,7 +3,8 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon, OptionRow, Screen, ScreenHeader, SegmentedControl, Sheet, Text } from '@/components';
-import { sortLabels } from '@/features/categories';
+import { sortLabels, useCategories } from '@/features/categories';
+import { canExportVault, ExportCancelled, useMarkdownExport, useNotes } from '@/features/notes';
 import { usePreferences, type FolderSort } from '@/features/settings';
 import { accentNames, accentPalettes, useTheme, type ThemeMode } from '@/theme';
 
@@ -14,6 +15,23 @@ export default function SettingsScreen() {
   const { colors, spacing } = theme;
   const { preferences, update } = usePreferences();
   const [sortOpen, setSortOpen] = useState(false);
+  const { folders } = useCategories();
+  const { notes } = useNotes();
+  const { exportAll } = useMarkdownExport(folders);
+  const [exportState, setExportState] = useState<{ busy: boolean; message?: string }>({ busy: false });
+
+  const runExport = async () => {
+    setExportState({ busy: true });
+    try {
+      const { folder, count } = await exportAll();
+      setExportState({ busy: false, message: `${count} ${count === 1 ? 'nota exportada' : 'notas exportadas'} na pasta “${folder}”.` });
+    } catch (error) {
+      setExportState({
+        busy: false,
+        message: error instanceof ExportCancelled ? undefined : error instanceof Error ? error.message : 'Falha ao exportar.',
+      });
+    }
+  };
 
   return (
     <Screen>
@@ -96,7 +114,26 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <View style={{ marginTop: spacing.sm }}>
-            <OptionRow inset={theme.layout.screenPadding} label="Exportar meus dados" trailing={<Soon />} />
+            <OptionRow
+              inset={theme.layout.screenPadding}
+              label="Exportar em Markdown"
+              description={
+                canExportVault
+                  ? 'Escolha uma pasta (ex.: seu cofre do Obsidian). As categorias viram pastas.'
+                  : 'Disponível no app para Android e iOS. Na web, exporte cada nota pela tela da nota.'
+              }
+              onPress={canExportVault && !exportState.busy && notes.length > 0 ? runExport : undefined}
+              trailing={
+                <Text variant="callout" color="tertiary">
+                  {exportState.busy ? 'Exportando…' : String(notes.length)}
+                </Text>
+              }
+            />
+            {exportState.message ? (
+              <Text variant="caption" color="secondary" style={{ paddingHorizontal: theme.layout.screenPadding, marginBottom: spacing.sm }}>
+                {exportState.message}
+              </Text>
+            ) : null}
             <OptionRow inset={theme.layout.screenPadding} label="Apagar todos os dados" trailing={<Soon />} />
           </View>
         </Section>

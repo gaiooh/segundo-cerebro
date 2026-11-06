@@ -3,30 +3,79 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FadeIn, Icon, IconButton, Screen, ScreenHeader, Text } from '@/components';
+import { FadeIn, Icon, IconButton, OptionRow, Screen, ScreenHeader, Sheet, Text } from '@/components';
 import {
   CreateFolderSheet,
+  EditFolderSheet,
   FolderActions,
   FolderBrowser,
   SortSheet,
+  UNFILED_ID,
   useCategories,
   type Folder,
 } from '@/features/categories';
-import { NoteRow } from '@/features/notes';
+import { NoteRow, type NoteSummary } from '@/features/notes';
 import { pluralize } from '@/lib/format';
 import { useTheme } from '@/theme';
 
+const openNote = (note: NoteSummary) => router.push({ pathname: '/note/[id]', params: { id: note.id } });
+const back = () => (router.canGoBack() ? router.back() : router.replace('/categories'));
+
 export default function FolderScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return id === UNFILED_ID ? <UnfiledScreen /> : <CategoryScreen id={id} />;
+}
+
+/** Notes captured without a category. */
+function UnfiledScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { getNotes } = useCategories();
+  const notes = getNotes(null);
+  return (
+    <Screen>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + theme.spacing.xxxl }}
+        showsVerticalScrollIndicator={false}>
+        <ScreenHeader
+          title="Sem categoria"
+          subtitle={pluralize(notes.length, 'nota para organizar', 'notas para organizar')}
+          leading={<BackButton onPress={back} />}
+          actions={
+            <IconButton
+              icon="plus"
+              accessibilityLabel="Nova nota"
+              onPress={() => router.push('/note/new')}
+              variant="tonal"
+              size={38}
+            />
+          }
+        />
+        {notes.length > 0 ? (
+          <FadeIn delay={60}>
+            {notes.map((note, index) => (
+              <NoteRow key={note.id} note={note} onPress={() => openNote(note)} showDivider={index < notes.length - 1} />
+            ))}
+          </FadeIn>
+        ) : (
+          <Empty text={'Tudo organizado.\nNovas capturas sem categoria aparecem aqui.'} />
+        )}
+      </ScrollView>
+    </Screen>
+  );
+}
+
+function CategoryScreen({ id }: { id: string }) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { getFolder, getChildren, getNotes, countNotes } = useCategories();
   const [sortOpen, setSortOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [reordering, setReordering] = useState(false);
 
   const folder = getFolder(id);
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/categories'));
 
   if (!folder) {
     return (
@@ -54,8 +103,10 @@ export default function FolderScreen() {
           actions={
             <FolderActions
               reordering={reordering}
+              onEdit={() => setEditOpen(true)}
               onSort={() => setSortOpen(true)}
-              onCreate={() => setCreateOpen(true)}
+              onCreate={() => setAddOpen(true)}
+              createLabel="Adicionar"
               onDoneReordering={() => setReordering(false)}
             />
           }
@@ -74,21 +125,37 @@ export default function FolderScreen() {
           <FadeIn delay={60}>
             <SectionLabel>Notas</SectionLabel>
             {notes.map((note, index) => (
-              <NoteRow key={note.id} note={note} showDivider={index < notes.length - 1} />
+              <NoteRow key={note.id} note={note} onPress={() => openNote(note)} showDivider={index < notes.length - 1} />
             ))}
           </FadeIn>
         ) : subfolders.length === 0 ? (
-          <View style={[styles.empty, { padding: theme.spacing.xxl }]}>
-            <Icon name="note" size={28} color={theme.colors.textTertiary} />
-            <Text variant="callout" color="tertiary" align="center" style={{ marginTop: theme.spacing.md }}>
-              Nenhuma nota aqui ainda.{'\n'}O que você registrar nesta categoria aparece aqui.
-            </Text>
-          </View>
+          <Empty text={'Nenhuma nota aqui ainda.\nO que você registrar nesta categoria aparece aqui.'} />
         ) : null}
       </ScrollView>
 
+      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} title={`Adicionar em ${folder.name}`}>
+        <OptionRow
+          icon="note"
+          label="Nova nota"
+          description="Escreva um pensamento nesta pasta"
+          onPress={() => {
+            setAddOpen(false);
+            router.push({ pathname: '/note/new', params: { folderId: folder.id } });
+          }}
+        />
+        <OptionRow
+          icon="folderPlus"
+          label="Nova subpasta"
+          description="Organize em mais um nível"
+          onPress={() => {
+            setAddOpen(false);
+            setCreateOpen(true);
+          }}
+        />
+      </Sheet>
       <SortSheet visible={sortOpen} onClose={() => setSortOpen(false)} onStartReorder={() => setReordering(true)} />
       <CreateFolderSheet visible={createOpen} onClose={() => setCreateOpen(false)} parent={folder} />
+      <EditFolderSheet visible={editOpen} onClose={() => setEditOpen(false)} folder={folder} onDeleted={back} />
     </Screen>
   );
 }
@@ -97,6 +164,18 @@ function BackButton({ onPress }: { onPress: () => void }) {
   const theme = useTheme();
   return (
     <IconButton icon="chevronLeft" accessibilityLabel="Voltar" onPress={onPress} color={theme.colors.textSecondary} />
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.empty, { padding: theme.spacing.xxl }]}>
+      <Icon name="note" size={28} color={theme.colors.textTertiary} />
+      <Text variant="callout" color="tertiary" align="center" style={{ marginTop: theme.spacing.md }}>
+        {text}
+      </Text>
+    </View>
   );
 }
 

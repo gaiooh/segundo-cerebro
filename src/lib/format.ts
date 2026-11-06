@@ -18,3 +18,16 @@ export function formatRelativeDate(iso: string, now: number = Date.now()): strin
 export function pluralize(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+const fullDate = new Intl.DateTimeFormat('pt-BR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** "5 de nov. de 2026, 10:32" */
+export function formatFullDate(iso: string): string {
+  return fullDate.format(new Date(iso));
+}

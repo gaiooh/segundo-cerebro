@@ -9,12 +9,14 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 
 import { CategoriesProvider } from '@/features/categories';
+import { NotesProvider } from '@/features/notes';
 import { PreferencesProvider, usePreferences } from '@/features/settings';
+import { DatabaseProvider } from '@/lib/database';
 import { ThemeProvider, useTheme } from '@/theme';
 
 /**
  * Root layout: loads fonts and composes global providers
- * (preferences → theme → data) around the navigator.
+ * (preferences → theme → database → notes → categories) around the navigator.
  */
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -39,9 +41,13 @@ function ThemedApp() {
   if (!ready) return null;
   return (
     <ThemeProvider mode={preferences.themeMode} accent={preferences.accent}>
-      <CategoriesProvider>
-        <Navigator />
-      </CategoriesProvider>
+      <DatabaseProvider>
+        <NotesProvider>
+          <CategoriesProvider>
+            <Navigator />
+          </CategoriesProvider>
+        </NotesProvider>
+      </DatabaseProvider>
     </ThemeProvider>
   );
 }
@@ -58,6 +64,9 @@ function Navigator() {
         }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="folder/[id]" />
+        <Stack.Screen name="note/[id]" />
+        <Stack.Screen name="note/new" />
+        <Stack.Screen name="search" />
       </Stack>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
     </View>

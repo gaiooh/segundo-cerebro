@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { FadeIn, Icon, Text } from '@/components';
+import { FadeIn, Icon, PressableScale, Text } from '@/components';
 import { formatRelativeDate } from '@/lib/format';
 import { useTheme } from '@/theme';
 
@@ -8,12 +8,15 @@ import type { RecentCapture } from '../useRecentCaptures';
 
 type RecentCapturesProps = {
   items: RecentCapture[];
+  onOpen?: (noteId: string) => void;
 };
 
 /** Discreet horizontal strip of the latest captures. */
-export function RecentCaptures({ items }: RecentCapturesProps) {
+export function RecentCaptures({ items, onOpen }: RecentCapturesProps) {
   const theme = useTheme();
   const { colors, spacing } = theme;
+
+  if (items.length === 0) return null;
 
   return (
     <View>
@@ -29,7 +32,11 @@ export function RecentCaptures({ items }: RecentCapturesProps) {
         contentContainerStyle={{ paddingHorizontal: theme.layout.screenPadding, gap: spacing.sm }}>
         {items.map((item) => (
           <FadeIn key={item.id} offset={4}>
-            <View
+            <PressableScale
+              onPress={item.noteId && onOpen ? () => onOpen(item.noteId!) : undefined}
+              disabled={!item.noteId || !onOpen}
+              accessibilityRole={item.noteId ? 'button' : undefined}
+              accessibilityLabel={item.title}
               style={[
                 styles.card,
                 {
@@ -52,7 +59,7 @@ export function RecentCaptures({ items }: RecentCapturesProps) {
                   {item.pending ? 'Agora · demonstração' : formatRelativeDate(item.createdAt)}
                 </Text>
               </View>
-            </View>
+            </PressableScale>
           </FadeIn>
         ))}
       </ScrollView>
