@@ -122,7 +122,9 @@ export class NetworkScene {
       this.drift[i * 3 + 2] = Math.sin(angle) * r;
       this.phases[i] = (i * 1.7) % (Math.PI * 2);
       const degree = Math.min(network.degree[i], 10);
-      this.baseScale[i] = (network.nodes[i].kind === 'note' ? 0.2 : 0.13) + degree * 0.018;
+      const kind = network.nodes[i].kind;
+      // Folders read as hubs, notes as the main points, demo concepts as small dots.
+      this.baseScale[i] = (kind === 'folder' ? 0.26 : kind === 'note' ? 0.2 : 0.13) + degree * 0.018;
     }
 
     // Nodes: one instanced sphere mesh, lit, with per-instance color.

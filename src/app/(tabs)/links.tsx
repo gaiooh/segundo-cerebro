@@ -1,24 +1,48 @@
+import { router, useIsFocused } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Chip, IconButton, Scrim, Text } from '@/components';
-import { getDemoNetwork, IdeaDetail, KnowledgeNetwork3D } from '@/features/semantic-links';
+import {
+  countNoteLinks,
+  getDemoNetwork,
+  IdeaDetail,
+  KnowledgeNetwork3D,
+  useNoteNetwork,
+  type KnowledgeNetwork,
+  type NetworkNode,
+} from '@/features/semantic-links';
 import { pluralize } from '@/lib/format';
 import { useTheme } from '@/theme';
 
 /**
  * Ligações — an immersive 3D map of the knowledge network. The network fills
  * the screen; title, filters and the selection card float above it.
+ *
+ * It shows the user's real notes, folders and [[links]]. Only while there are
+ * no notes yet, a fictional demo network is shown, clearly labeled as such.
  */
 export default function LinksScreen() {
   const theme = useTheme();
   const { colors, spacing } = theme;
   const insets = useSafeAreaInsets();
-  const network = useMemo(() => getDemoNetwork(), []);
+  const focused = useIsFocused();
+  const { network: noteNetwork, ready } = useNoteNetwork(focused);
+  const isDemo = ready && noteNetwork === null;
+  const network = useMemo(() => noteNetwork ?? getDemoNetwork(), [noteNetwork]);
+  const sceneKey = useMemo(() => (noteNetwork ? `notes-${networkVersion(noteNetwork)}` : 'demo'), [noteNetwork]);
   const [focusCategory, setFocusCategory] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [resetSignal, setResetSignal] = useState(0);
+  const [shownNetwork, setShownNetwork] = useState(network);
+  // Node indices belong to one network: a rebuilt network starts unselected
+  // (derived state, adjusted during render).
+  if (shownNetwork !== network) {
+    setShownNetwork(network);
+    setSelected(null);
+    if (focusCategory && !network.categories.some((c) => c.id === focusCategory)) setFocusCategory(null);
+  }
 
   const chooseCategory = (id: string | null) => {
     setSelected(null);
@@ -26,6 +50,10 @@ export default function LinksScreen() {
   };
 
   const idea = selected !== null ? network.nodes[selected] : undefined;
+  const openIdea = (node: NetworkNode) =>
+    node.kind === 'note'
+      ? router.push({ pathname: '/note/[id]', params: { id: node.id } })
+      : router.push({ pathname: '/folder/[id]', params: { id: node.id } });
   const categoryOf = (id: string) => network.categories.find((c) => c.id === id);
   const related = useMemo(
     () =>
@@ -41,7 +69,9 @@ export default function LinksScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* A new network means a new scene: remount instead of patching the renderer. */}
       <KnowledgeNetwork3D
+        key={sceneKey}
         network={network}
         focusCategory={focusCategory}
         selected={selected}
@@ -60,7 +90,15 @@ export default function LinksScreen() {
               Ligações
             </Text>
             <Text variant="callout" color="tertiary" style={{ marginTop: spacing.xs }}>
-              {pluralize(network.nodes.length, 'ideia', 'ideias')} · {pluralize(network.edges.length, 'conexão', 'conexões')}
+              {!ready
+                ? ' '
+                : isDemo
+                  ? 'Exemplo fictício · suas notas aparecem aqui'
+                  : `${pluralize(network.nodes.filter((n) => n.kind === 'note').length, 'nota', 'notas')} · ${pluralize(
+                      countNoteLinks(network),
+                      'ligação',
+                      'ligações',
+                    )}`}
             </Text>
           </View>
           <IconButton
@@ -108,16 +146,30 @@ export default function LinksScreen() {
               related={related}
               onSelect={setSelected}
               onClose={() => setSelected(null)}
+              onOpen={isDemo || idea.kind === 'concept' ? undefined : () => openIdea(idea)}
             />
           ) : (
             <Text variant="caption" color="tertiary" align="center" pointerEvents="none">
-              Arraste para girar · pinça para aproximar · toque em uma ideia
+              {isDemo
+                ? 'Registre ideias e ligue notas com [[Título]] para formar a sua rede'
+                : 'Arraste para girar · pinça para aproximar · toque em uma ideia'}
             </Text>
           )}
         </View>
       </View>
     </View>
   );
+}
+
+/** Changes whenever nodes (ids, labels, groups) or edges change, even with equal counts. */
+function networkVersion(network: KnowledgeNetwork): string {
+  let hash = 0;
+  const add = (text: string) => {
+    for (let i = 0; i < text.length; i++) hash = (Math.imul(hash, 31) + text.charCodeAt(i)) | 0;
+  };
+  for (const node of network.nodes) add(`${node.id}|${node.label}|${node.categoryId};`);
+  for (const edge of network.edges) add(`${edge.source}-${edge.target};`);
+  return (hash >>> 0).toString(36);
 }
 
 const styles = StyleSheet.create({

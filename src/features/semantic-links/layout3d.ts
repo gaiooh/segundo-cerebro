@@ -21,11 +21,14 @@ export function layout3d({ nodeCount, edges, groups, groupCount, random }: Layou
 } {
   const anchors: [number, number, number][] = [];
   const golden = Math.PI * (3 - Math.sqrt(5));
+  // Small networks (a few notes) keep their groups close together, so they
+  // don't end up at opposite edges of the screen; large ones use the full spread.
+  const spread = Math.min(6.5, 1.5 + Math.sqrt(nodeCount) * 0.6);
   for (let i = 0; i < groupCount; i++) {
     const y = 1 - (i / Math.max(groupCount - 1, 1)) * 2;
     const r = Math.sqrt(1 - y * y);
     const theta = golden * i;
-    anchors.push([Math.cos(theta) * r * 6.5, y * 6.5, Math.sin(theta) * r * 6.5]);
+    anchors.push([Math.cos(theta) * r * spread, y * spread, Math.sin(theta) * r * spread]);
   }
 
   const pos = new Float32Array(nodeCount * 3);

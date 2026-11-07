@@ -14,10 +14,12 @@ type IdeaDetailProps = {
   related: RelatedIdea[];
   onSelect: (index: number) => void;
   onClose: () => void;
+  /** Opens the idea in its own screen (real notes and folders). */
+  onOpen?: () => void;
 };
 
 /** Compact card with the selected idea and its connections, over the network. */
-export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaDetailProps) {
+export function IdeaDetail({ idea, category, related, onSelect, onClose, onOpen }: IdeaDetailProps) {
   const theme = useTheme();
   const { colors, spacing } = theme;
   const tint = category ? theme.tint(category.tint) : undefined;
@@ -41,7 +43,7 @@ export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaD
             <View style={[styles.row, { gap: 6 }]}>
               {tint ? <View style={[styles.dot, { backgroundColor: tint.dot }]} /> : null}
               <Text variant="caption" color="tertiary">
-                {[category?.name, idea.kind === 'note' ? 'Nota' : 'Conceito', pluralize(related.length, 'ligação', 'ligações')]
+                {[category?.name, kindLabels[idea.kind], pluralize(related.length, 'ligação', 'ligações')]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>
@@ -50,6 +52,15 @@ export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaD
               {idea.label}
             </Text>
           </View>
+          {onOpen ? (
+            <IconButton
+              icon={idea.kind === 'folder' ? 'folder' : 'note'}
+              size={32}
+              accessibilityLabel={idea.kind === 'folder' ? `Abrir pasta ${idea.label}` : `Abrir nota ${idea.label}`}
+              onPress={onOpen}
+              color={colors.textSecondary}
+            />
+          ) : null}
           <IconButton icon="close" size={32} accessibilityLabel="Fechar" onPress={onClose} color={colors.textTertiary} />
         </View>
 
@@ -87,6 +98,8 @@ export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaD
     </FadeIn>
   );
 }
+
+const kindLabels: Record<NetworkNode['kind'], string> = { note: 'Nota', folder: 'Pasta', concept: 'Conceito' };
 
 const styles = StyleSheet.create({
   card: {

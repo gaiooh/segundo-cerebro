@@ -5,8 +5,11 @@ export type NetworkNode = {
   label: string;
   /** Top-level category the idea belongs to. */
   categoryId: string;
-  /** Notes are things the user wrote; concepts are recurring themes. */
-  kind: 'note' | 'concept';
+  /**
+   * Notes are things the user wrote; folders are their categories and
+   * subcategories; concepts are recurring themes (demo network only).
+   */
+  kind: 'note' | 'folder' | 'concept';
 };
 
 export type NetworkEdge = {
@@ -15,6 +18,8 @@ export type NetworkEdge = {
   target: number;
   /** 0..1 — how strongly the ideas are related. */
   strength: number;
+  /** "link": a [[link]] between notes; "structure": note → folder, subfolder → folder. */
+  kind?: 'link' | 'structure';
 };
 
 export type NetworkCategory = { id: string; name: string; tint: TintName };

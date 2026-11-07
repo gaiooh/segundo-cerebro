@@ -49,7 +49,7 @@ src/app/
   _layout.tsx            Fontes + provedores (Preferences → Theme → Categories) + Stack raiz
   (tabs)/_layout.tsx     Abas com barra inferior própria (components/TabBar.tsx)
     categories.tsx       Categorias (lista/grade, ordenação, criação)
-    links.tsx            Ligações (grafo de ideias)
+    links.tsx            Ligações (rede 3D das notas, pastas e [[ligações]])
     index.tsx            Falar — rota inicial "/" e ação central
     assistant.tsx        Assistente
     settings.tsx         Configurações
@@ -120,6 +120,20 @@ e usam imports relativos com extensão `.ts`, para rodarem também nos testes em
 - Nota única: menu de compartilhamento do sistema (web: download). Tudo: o usuário escolhe
   uma pasta (ex.: o cofre do Obsidian) via `Directory.pickDirectoryAsync` (Android/iOS).
 
+### Rede 3D (aba Ligações)
+
+- Renderizada com `expo-gl` + `three` (`semantic-links/scene/NetworkScene.ts`).
+- `buildNoteNetwork` (TypeScript puro, testado em Node) monta a rede a partir do banco:
+  - nós: cada nota e cada pasta que contém notas;
+  - arestas `link`: as ligações `[[...]]` entre notas (`note_links`);
+  - arestas `structure`: nota → pasta e subpasta → pasta mãe;
+  - grupos (cores e filtros): a categoria raiz de cada nó; notas sem categoria formam o grupo
+    "Sem categoria".
+- `useNoteNetwork` só reconstrói a rede com a aba em foco, para não recalcular o layout 3D a
+  cada autosave. O layout é determinístico: os mesmos dados geram a mesma rede.
+- O layout de forças é O(n²) por iteração; para milhares de notas será preciso otimizá-lo
+  (ex.: grade espacial) ou movê-lo para fora da thread de UI.
+
 ### Web
 
 `metro.config.js` serve arquivos `.wasm` e envia os cabeçalhos COOP/COEP exigidos pelo
@@ -138,8 +152,10 @@ e usam imports relativos com extensão `.ts`, para rodarem também nos testes em
 
 ## Dados de demonstração
 
-Notas e categorias são **reais** (SQLite). Os arquivos `mock-notes.ts` e `mock-folders.ts`
-continuam existindo só para a demonstração da aba Ligações. Gravação de voz, transcrição e
+Notas e categorias são **reais** (SQLite). A aba Ligações mostra a rede real
+(`semantic-links/note-network.ts`); só enquanto não existe nenhuma nota ela exibe uma rede
+fictícia (`mock-network.ts`, que usa `mock-notes.ts` e `mock-folders.ts`), identificada na tela
+como "Exemplo fictício". Gravação de voz, transcrição e
 respostas do assistente ainda são **simulações visuais** (`useCaptureSimulation`,
 `useAssistantChat`); capturas por texto na tela Falar já viram notas reais. Ao implementar cada funcionalidade, substitua o
 mock pela fonte real mantendo a mesma API exportada pelo `index.ts` da feature.
