@@ -1,0 +1,69 @@
+# Builds the web version of the app and publishes it to GitHub Pages:
+# https://gaiooh.github.io/segundo-cerebro/
+name: Deploy web to GitHub Pages
+
+# Manual only for now: GitHub Pages needs a public repository (or GitHub Pro)
+# and this one is private. Once Pages is enabled (Settings → Pages → Source:
+# GitHub Actions), add `push: { branches: [master] }` to deploy on every push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Must match the repository name (Pages serves from /<repo>/).
+      EXPO_BASE_URL: /segundo-cerebro
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # node:sqlite and TypeScript type stripping (tests) need Node 24.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck, lint and test
+        run: |
+          npm run typecheck
+          npx expo lint
+          npm test
+
+      - name: Export web build
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Prepare for GitHub Pages
+        run: |
+          # SQLite on the web needs cross-origin isolation; Pages cannot set the headers.
+          cp web/coi-serviceworker.js dist/coi-serviceworker.js
+          sed -i "s#<head>#<head><script src=\"${EXPO_BASE_URL}/coi-serviceworker.js\"></script>#" dist/index.html
+          grep -q coi-serviceworker dist/index.html
+          # Single-page app: unknown paths (deep links such as /note/<id>) load the app.
+          cp dist/index.html dist/404.html
+          # Serve folders that start with "_" (e.g. _expo) as-is.
+          touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
