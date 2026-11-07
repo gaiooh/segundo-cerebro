@@ -1,21 +1,41 @@
-The MIT License (MIT)
+Segundo Cérebro — Licença Proprietária
+Copyright (c) 2026 gaiooh (https://github.com/gaiooh). Todos os direitos reservados.
 
-Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)
+Este repositório e todo o seu conteúdo — código-fonte, design, textos, imagens,
+documentação e demais arquivos (o "Software") — são propriedade exclusiva do
+titular dos direitos autorais acima e estão protegidos pela Lei de Direitos
+Autorais (Lei nº 9.610/1998), pela Lei do Software (Lei nº 9.609/1998) e pelos
+tratados internacionais aplicáveis.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. NENHUMA LICENÇA É CONCEDIDA. O acesso a este repositório, por qualquer meio,
+   não concede a você nenhum direito sobre o Software, exceto quando houver
+   autorização prévia, expressa e por escrito do titular.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. SEM AUTORIZAÇÃO ESCRITA DO TITULAR, É PROIBIDO:
+   a) copiar, reproduzir ou baixar o Software, no todo ou em parte;
+   b) modificar, adaptar, traduzir ou criar obras derivadas;
+   c) distribuir, publicar, vender, sublicenciar, alugar ou ceder o Software;
+   d) usar o Software, ou partes dele, em qualquer produto ou serviço,
+      comercial ou não;
+   e) usar o nome "Segundo Cérebro", a identidade visual ou o design do
+      aplicativo;
+   f) fazer engenharia reversa, salvo quando a lei expressamente permitir.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. COLABORADORES. Pessoas convidadas pelo titular para trabalhar no projeto
+   podem acessar e modificar o Software apenas para esse fim, enquanto durar o
+   convite. Contribuições enviadas ao repositório passam a integrar o Software
+   e ficam sujeitas a esta licença.
+
+4. COMPONENTES DE TERCEIROS. Bibliotecas de terceiros usadas pelo projeto (por
+   exemplo, as listadas em package.json) continuam regidas por suas próprias
+   licenças. Esta licença cobre apenas o trabalho original deste repositório.
+
+5. SEM GARANTIAS. O Software é fornecido "no estado em que se encontra", sem
+   garantia de qualquer tipo. O titular não se responsabiliza por danos
+   decorrentes do seu uso.
+
+6. VIOLAÇÕES. O uso não autorizado sujeita o infrator às sanções civis e
+   penais previstas em lei.
+
+Para pedir autorização ou tirar dúvidas, entre em contato pelo GitHub:
+https://github.com/gaiooh

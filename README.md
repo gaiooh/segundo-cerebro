@@ -181,6 +181,17 @@ Os detalhes técnicos (camadas, modelo do banco, formato da exportação, rede 3
 
 ---
 
+## Licença e uso
+
+Este é um **projeto privado e proprietário. Todos os direitos são reservados.**
+Ninguém pode copiar, usar, modificar ou distribuir o código sem autorização por escrito
+do autor. Os termos completos estão em [LICENSE](LICENSE).
+
+**Segurança:** nunca coloque chaves de API, tokens ou senhas no código. Use arquivos `.env`,
+que ficam fora do repositório (já configurado no `.gitignore`).
+
+---
+
 ## Próximos passos
 
 - Gravação de voz real e **transcrição** do áudio em texto.
