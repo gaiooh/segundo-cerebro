@@ -5,6 +5,7 @@ export { IconButton } from './IconButton';
 export { OptionRow } from './OptionRow';
 export { PressableScale } from './PressableScale';
 export { Screen } from './Screen';
+export { Scrim } from './Scrim';
 export { ScreenHeader } from './ScreenHeader';
 export { SegmentedControl, type Segment } from './SegmentedControl';
 export { Sheet } from './Sheet';

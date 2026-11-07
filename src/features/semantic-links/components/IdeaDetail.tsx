@@ -1,20 +1,22 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { FadeIn, IconButton, PressableScale, Text } from '@/components';
+import { FadeIn, Icon, IconButton, PressableScale, Text } from '@/components';
 import { pluralize } from '@/lib/format';
 import { useTheme } from '@/theme';
 
-import type { GraphCategory, IdeaNode } from '../types';
+import type { NetworkCategory, NetworkNode } from '../types';
+
+type RelatedIdea = { index: number; node: NetworkNode; category?: NetworkCategory };
 
 type IdeaDetailProps = {
-  idea: IdeaNode;
-  category?: GraphCategory;
-  related: IdeaNode[];
-  onSelect: (id: string) => void;
+  idea: NetworkNode;
+  category?: NetworkCategory;
+  related: RelatedIdea[];
+  onSelect: (index: number) => void;
   onClose: () => void;
 };
 
-/** Compact card describing the selected idea and its connections. */
+/** Compact card with the selected idea and its connections, over the network. */
 export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaDetailProps) {
   const theme = useTheme();
   const { colors, spacing } = theme;
@@ -29,41 +31,57 @@ export function IdeaDetail({ idea, category, related, onSelect, onClose }: IdeaD
             backgroundColor: colors.surfaceElevated,
             borderColor: colors.border,
             borderRadius: theme.radius.lg,
-            padding: spacing.lg,
+            paddingTop: spacing.lg,
+            paddingBottom: spacing.sm,
             shadowColor: '#000',
           },
         ]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: spacing.lg }]}>
           <View style={styles.headerText}>
-            {category && tint ? (
-              <View style={[styles.categoryRow, { gap: 6 }]}>
-                <View style={[styles.dot, { backgroundColor: tint.dot }]} />
-                <Text variant="caption" color="tertiary">
-                  {category.name} · {pluralize(related.length, 'ligação', 'ligações')}
-                </Text>
-              </View>
-            ) : null}
+            <View style={[styles.row, { gap: 6 }]}>
+              {tint ? <View style={[styles.dot, { backgroundColor: tint.dot }]} /> : null}
+              <Text variant="caption" color="tertiary">
+                {[category?.name, idea.kind === 'note' ? 'Nota' : 'Conceito', pluralize(related.length, 'ligação', 'ligações')]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            </View>
             <Text variant="headline" numberOfLines={2} style={{ marginTop: 4 }}>
               {idea.label}
             </Text>
           </View>
           <IconButton icon="close" size={32} accessibilityLabel="Fechar" onPress={onClose} color={colors.textTertiary} />
         </View>
+
         {related.length > 0 ? (
-          <View style={[styles.related, { marginTop: spacing.md, gap: spacing.xs }]}>
-            {related.slice(0, 3).map((item) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: spacing.md }}>
+            {related.map(({ index, node, category: relatedCategory }) => (
               <PressableScale
-                key={item.id}
-                onPress={() => onSelect(item.id)}
+                key={node.id}
+                onPress={() => onSelect(index)}
                 accessibilityRole="button"
-                style={[styles.relatedRow, { gap: spacing.sm }]}>
-                <View style={[styles.line, { backgroundColor: colors.accent }]} />
-                <Text variant="callout" color="secondary" numberOfLines={1} style={styles.flex}>
-                  {item.label}
+                accessibilityLabel={`Ir para ${node.label}`}
+                pressedScale={0.95}
+                style={[
+                  styles.chip,
+                  { borderColor: colors.border, backgroundColor: colors.background, borderRadius: theme.radius.pill },
+                ]}>
+                <View
+                  style={[
+                    styles.dot,
+                    { backgroundColor: relatedCategory ? theme.tint(relatedCategory.tint).dot : colors.textTertiary },
+                  ]}
+                />
+                <Text variant="label" color="secondary" numberOfLines={1} style={styles.chipText}>
+                  {node.label}
                 </Text>
+                <Icon name="chevronRight" size={14} color={colors.textTertiary} />
               </PressableScale>
             ))}
-          </View>
+          </ScrollView>
         ) : null}
       </View>
     </FadeIn>
@@ -74,16 +92,22 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 6,
   },
   header: { flexDirection: 'row', alignItems: 'flex-start' },
   headerText: { flex: 1, paddingRight: 8 },
-  categoryRow: { flexDirection: 'row', alignItems: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
-  related: {},
-  relatedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  line: { width: 12, height: 1.5, borderRadius: 1 },
-  flex: { flex: 1 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 34,
+    paddingLeft: 12,
+    paddingRight: 8,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  chipText: { maxWidth: 170 },
 });

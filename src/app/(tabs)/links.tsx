@@ -1,99 +1,133 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chip, FadeIn, Screen, ScreenHeader, Text } from '@/components';
-import { GraphView, IdeaDetail, layoutGraph, mockGraph, neighborsOf } from '@/features/semantic-links';
+import { Chip, IconButton, Scrim, Text } from '@/components';
+import { getDemoNetwork, IdeaDetail, KnowledgeNetwork3D } from '@/features/semantic-links';
 import { pluralize } from '@/lib/format';
 import { useTheme } from '@/theme';
 
+/**
+ * Ligações — an immersive 3D map of the knowledge network. The network fills
+ * the screen; title, filters and the selection card float above it.
+ */
 export default function LinksScreen() {
   const theme = useTheme();
-  const { spacing } = theme;
-  const graph = mockGraph;
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const { colors, spacing } = theme;
+  const insets = useSafeAreaInsets();
+  const network = useMemo(() => getDemoNetwork(), []);
   const [focusCategory, setFocusCategory] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const nodes = useMemo(
-    () => (size.width > 0 && size.height > 0 ? layoutGraph(graph, size.width, size.height, { top: 40, right: 48, bottom: 64, left: 48 }) : []),
-    [graph, size.width, size.height],
-  );
-
-  const selected = selectedId ? graph.nodes.find((n) => n.id === selectedId) : undefined;
-  const related = useMemo(() => {
-    if (!selectedId) return [];
-    const ids = neighborsOf(graph, selectedId);
-    return graph.nodes.filter((n) => ids.has(n.id));
-  }, [graph, selectedId]);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [resetSignal, setResetSignal] = useState(0);
 
   const chooseCategory = (id: string | null) => {
-    setSelectedId(null);
+    setSelected(null);
     setFocusCategory((current) => (current === id ? null : id));
   };
 
+  const idea = selected !== null ? network.nodes[selected] : undefined;
+  const categoryOf = (id: string) => network.categories.find((c) => c.id === id);
+  const related = useMemo(
+    () =>
+      selected === null
+        ? []
+        : network.neighbors[selected].map((index) => ({
+            index,
+            node: network.nodes[index],
+            category: network.categories.find((c) => c.id === network.nodes[index].categoryId),
+          })),
+    [network, selected],
+  );
+
   return (
-    <Screen>
-      <ScreenHeader
-        title="Ligações"
-        subtitle={`${pluralize(graph.nodes.length, 'ideia', 'ideias')} · ${pluralize(graph.edges.length, 'conexão', 'conexões')}`}
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <KnowledgeNetwork3D
+        network={network}
+        focusCategory={focusCategory}
+        selected={selected}
+        onSelect={(index) => setSelected((current) => (index === current ? null : index))}
+        resetSignal={resetSignal}
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chips}
-        contentContainerStyle={{ paddingHorizontal: theme.layout.screenPadding, gap: spacing.sm }}>
-        <Chip label="Todas" selected={focusCategory === null} onPress={() => chooseCategory(null)} />
-        {graph.categories.map((category) => (
-          <Chip
-            key={category.id}
-            label={category.name}
-            dotColor={theme.tint(category.tint).dot}
-            selected={focusCategory === category.id}
-            onPress={() => chooseCategory(category.id)}
+      {/* Top overlay: title + filters. Empty areas let gestures through. */}
+      <View style={[styles.top, { paddingTop: insets.top }]} pointerEvents="box-none">
+        <Scrim color={colors.background} from="top" style={styles.topScrim} />
+        <View
+          style={[styles.header, { paddingHorizontal: theme.layout.screenPadding, paddingTop: spacing.lg }]}
+          pointerEvents="box-none">
+          <View pointerEvents="none" style={styles.flex}>
+            <Text variant="display" accessibilityRole="header">
+              Ligações
+            </Text>
+            <Text variant="callout" color="tertiary" style={{ marginTop: spacing.xs }}>
+              {pluralize(network.nodes.length, 'ideia', 'ideias')} · {pluralize(network.edges.length, 'conexão', 'conexões')}
+            </Text>
+          </View>
+          <IconButton
+            icon="focus"
+            variant="tonal"
+            size={40}
+            accessibilityLabel="Recentralizar a rede"
+            onPress={() => {
+              setSelected(null);
+              setFocusCategory(null);
+              setResetSignal((n) => n + 1);
+            }}
           />
-        ))}
-      </ScrollView>
-
-      <View
-        style={styles.canvas}
-        onLayout={(e) => setSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
-        {nodes.length > 0 ? (
-          <FadeIn offset={0} style={StyleSheet.absoluteFill}>
-            <GraphView
-              graph={graph}
-              nodes={nodes}
-              width={size.width}
-              height={size.height}
-              focusCategory={focusCategory}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chips}
+          contentContainerStyle={{
+            paddingHorizontal: theme.layout.screenPadding,
+            gap: spacing.sm,
+            paddingVertical: spacing.md,
+          }}>
+          <Chip label="Todas" selected={focusCategory === null} onPress={() => chooseCategory(null)} />
+          {network.categories.map((category) => (
+            <Chip
+              key={category.id}
+              label={category.name}
+              dotColor={theme.tint(category.tint).dot}
+              selected={focusCategory === category.id}
+              onPress={() => chooseCategory(category.id)}
             />
-          </FadeIn>
-        ) : null}
+          ))}
+        </ScrollView>
+      </View>
 
-        <View style={[styles.overlay, { padding: theme.layout.screenPadding }]} pointerEvents="box-none">
-          {selected ? (
+      {/* Bottom overlay: selection context, or a quiet hint. */}
+      <View style={[styles.bottom, { padding: theme.layout.screenPadding }]} pointerEvents="box-none">
+        <Scrim color={colors.background} from="bottom" />
+        <View style={[styles.column, { maxWidth: theme.layout.maxContentWidth }]} pointerEvents="box-none">
+          {idea ? (
             <IdeaDetail
-              idea={selected}
-              category={graph.categories.find((c) => c.id === selected.categoryId)}
+              idea={idea}
+              category={categoryOf(idea.categoryId)}
               related={related}
-              onSelect={setSelectedId}
-              onClose={() => setSelectedId(null)}
+              onSelect={setSelected}
+              onClose={() => setSelected(null)}
             />
           ) : (
-            <Text variant="caption" color="tertiary" align="center">
-              Toque em uma ideia para ver suas ligações
+            <Text variant="caption" color="tertiary" align="center" pointerEvents="none">
+              Arraste para girar · pinça para aproximar · toque em uma ideia
             </Text>
           )}
         </View>
       </View>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  chips: { flexGrow: 0, marginBottom: 4 },
-  canvas: { flex: 1 },
-  overlay: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  top: { position: 'absolute', left: 0, right: 0, top: 0 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  chips: { flexGrow: 0 },
+  // Extends below the chips so the fade ends softly over the network.
+  topScrim: { bottom: -36 },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
+  column: { width: '100%' },
 });

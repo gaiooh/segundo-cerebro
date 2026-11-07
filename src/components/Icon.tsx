@@ -105,6 +105,12 @@ const icons = {
       <Path d="M7.5 11.5h.01M9.5 7.5h.01M14 7h.01" />
     </>
   ),
+  focus: (
+    <>
+      <Circle cx="12" cy="12" r="3" />
+      <Path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+    </>
+  ),
   drag: <Path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />,
   pencil: <Path d="M15.5 4.5l4 4L9 19H5v-4z" />,
   trash: <Path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />,
